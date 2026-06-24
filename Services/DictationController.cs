@@ -17,7 +17,8 @@ public enum DictationState { Idle, Recording, Transcribing }
 public sealed class DictationController : IDisposable
 {
     private readonly AudioRecorder _recorder = new();
-    private readonly ITranscriber _remote;
+    private readonly RemoteTranscriber _remote;
+    private readonly LocalTranscriber _local = new();
     private readonly OverlayWindow _overlay;
     private readonly Func<AppSettings> _settings;
     private readonly Action<string> _notify;
@@ -38,9 +39,15 @@ public sealed class DictationController : IDisposable
         _recorder.LevelChanged += level => _overlay.SetLevel(level);
     }
 
-    /// <summary>Picks the engine for this dictation. Phase 1: always remote;
-    /// local + auto-fallback arrive in later phases.</summary>
-    private ITranscriber ResolveTranscriber() => _remote;
+    /// <summary>Picks the engine for this dictation based on settings. Local is
+    /// used when selected and installed; otherwise remote. (Auto-fallback when
+    /// a remote request fails arrives in Phase 4.)</summary>
+    private ITranscriber ResolveTranscriber()
+    {
+        if (_settings().Engine == EngineMode.Local && _local.IsInstalled)
+            return _local;
+        return _remote;
+    }
 
     /// <summary>Hotkey toggle: start if idle, finish if recording.</summary>
     public void Toggle()
@@ -77,11 +84,18 @@ public sealed class DictationController : IDisposable
 
     private void StartRecording()
     {
-        var profile = _settings().ActiveProfile;
-        if (profile is null || string.IsNullOrWhiteSpace(profile.ApiKey))
+        // Local mode (installed) needs no API profile; otherwise require one.
+        bool localReady = _settings().Engine == EngineMode.Local && _local.IsInstalled;
+        if (!localReady)
         {
-            _notify("No active API profile. Open Settings to add one.");
-            return;
+            var profile = _settings().ActiveProfile;
+            if (profile is null || string.IsNullOrWhiteSpace(profile.ApiKey))
+            {
+                _notify(_settings().Engine == EngineMode.Local
+                    ? "Local model not installed. Open Settings to download it."
+                    : "No active API profile. Open Settings to add one.");
+                return;
+            }
         }
 
         // Remember where the caret is now — that's where we'll paste later.
@@ -162,5 +176,6 @@ public sealed class DictationController : IDisposable
         _cts?.Cancel();
         _cts?.Dispose();
         _recorder.Dispose();
+        _local.Dispose();
     }
 }

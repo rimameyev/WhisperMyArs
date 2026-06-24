@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using WhisperMyAss.Models;
 using WhisperMyAss.Services;
+using MessageBox = System.Windows.MessageBox;
 
 namespace WhisperMyAss.UI;
 
@@ -29,6 +30,9 @@ public partial class SettingsWindow : Window
     private ApiProfile? _selected;
     private bool _loading;
 
+    private readonly ModelManager _models = new();
+    private CancellationTokenSource? _downloadCts;
+
     public SettingsWindow(AppSettings settings, HotkeyManager hotkeys, Action<AppSettings> onSave)
     {
         InitializeComponent();
@@ -43,6 +47,11 @@ public partial class SettingsWindow : Window
         StartupCheck.IsChecked = settings.RunOnStartup;
         SoundsCheck.IsChecked = settings.PlaySounds;
 
+        RemoteRadio.IsChecked = settings.Engine == EngineMode.Remote;
+        LocalRadio.IsChecked = settings.Engine == EngineMode.Local;
+        FallbackCheck.IsChecked = settings.AutoFallbackToLocal;
+        UpdateModelStatus();
+
         RefreshProfiles();
         UpdateHotkeyText();
 
@@ -50,6 +59,84 @@ public partial class SettingsWindow : Window
             ProfilesList.SelectedIndex = 0;
 
         SourceInitialized += (_, _) => ApplyDarkTitleBar();
+        Closing += (_, _) => _downloadCts?.Cancel();
+    }
+
+    // ---------------- engine / local model ----------------
+
+    private void UpdateModelStatus()
+    {
+        bool installed = LocalEngine.Installed;
+        ModelStatusText.Text = installed
+            ? "Local model: installed and ready."
+            : "Local model: not installed.";
+        DownloadBtn.Visibility = installed ? Visibility.Collapsed : Visibility.Visible;
+        RemoveModelBtn.Visibility = installed ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void DownloadBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // Toggle to cancel if a download is in progress.
+        if (_downloadCts is not null)
+        {
+            _downloadCts.Cancel();
+            return;
+        }
+
+        _downloadCts = new CancellationTokenSource();
+        DownloadBtn.Content = "Cancel";
+        RemoveModelBtn.IsEnabled = false;
+        DownloadBar.Visibility = Visibility.Visible;
+        DownloadStatus.Visibility = Visibility.Visible;
+
+        var progress = new Progress<InstallProgress>(p =>
+        {
+            if (p.Fraction < 0)
+            {
+                DownloadBar.IsIndeterminate = true;
+                DownloadStatus.Text = p.Stage;
+            }
+            else
+            {
+                DownloadBar.IsIndeterminate = false;
+                DownloadBar.Value = p.Fraction * 100;
+                DownloadStatus.Text = $"{p.Stage}  {p.Fraction * 100:0}%";
+            }
+        });
+
+        try
+        {
+            await _models.InstallAsync(progress, _downloadCts.Token);
+            DownloadStatus.Text = "Local model installed.";
+        }
+        catch (OperationCanceledException)
+        {
+            DownloadStatus.Text = "Download cancelled.";
+        }
+        catch (Exception ex)
+        {
+            DownloadStatus.Text = $"Failed: {ex.Message}";
+        }
+        finally
+        {
+            _downloadCts?.Dispose();
+            _downloadCts = null;
+            DownloadBtn.Content = "Download offline model (~465 MB)";
+            DownloadBar.IsIndeterminate = false;
+            DownloadBar.Visibility = Visibility.Collapsed;
+            RemoveModelBtn.IsEnabled = true;
+            UpdateModelStatus();
+        }
+    }
+
+    private void RemoveModelBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show("Remove the downloaded offline model and engine?",
+                "WhisperMyAss", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+        try { _models.Remove(); }
+        catch (Exception ex) { MessageBox.Show($"Could not remove: {ex.Message}"); }
+        UpdateModelStatus();
     }
 
     // ---------------- profiles ----------------
@@ -187,7 +274,9 @@ public partial class SettingsWindow : Window
             ToggleHotkey = _hotkey,
             UseMiddleMouse = MiddleMouseCheck.IsChecked == true,
             RunOnStartup = StartupCheck.IsChecked == true,
-            PlaySounds = SoundsCheck.IsChecked == true
+            PlaySounds = SoundsCheck.IsChecked == true,
+            Engine = LocalRadio.IsChecked == true ? EngineMode.Local : EngineMode.Remote,
+            AutoFallbackToLocal = FallbackCheck.IsChecked == true
         };
         _onSave(updated);
         Close();

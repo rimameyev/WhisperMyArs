@@ -27,6 +27,7 @@
          (~200MB); we exclude them and download the Windows natives at runtime
          into %LOCALAPPDATA% so the base installer stays tiny. -->
     <PackageReference Include="org.k2fsa.sherpa.onnx" Version="1.13.3" ExcludeAssets="native;build;buildTransitive" />
+    <PackageReference Include="SharpCompress" Version="0.49.1" />
   </ItemGroup>
 
   <ItemGroup>

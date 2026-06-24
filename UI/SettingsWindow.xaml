@@ -157,6 +157,34 @@
             </StackPanel>
         </Border>
 
+        <!-- Engine -->
+        <Border Background="{StaticResource Panel}" CornerRadius="10" Padding="16" Margin="0,0,0,14">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Header}" Text="TRANSCRIPTION ENGINE"/>
+                <RadioButton x:Name="RemoteRadio" GroupName="Engine" Foreground="#EDEDF2"
+                             Content="Remote — Groq Whisper API (needs internet)"/>
+                <RadioButton x:Name="LocalRadio" GroupName="Engine" Foreground="#EDEDF2" Margin="0,6,0,0"
+                             Content="Local — Parakeet v3, offline (no internet needed)"/>
+                <CheckBox x:Name="FallbackCheck" Margin="0,8,0,0"
+                          Content="If online transcription fails, fall back to the local model"/>
+
+                <Border Background="#15151A" CornerRadius="6" Padding="10" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock x:Name="ModelStatusText" Text="Local model: checking…" Foreground="{StaticResource Sub}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="DownloadBtn" Content="Download offline model (~465 MB)" Click="DownloadBtn_Click"/>
+                            <Button x:Name="RemoveModelBtn" Content="Remove" Margin="8,0,0,0" Click="RemoveModelBtn_Click"/>
+                        </StackPanel>
+                        <ProgressBar x:Name="DownloadBar" Height="6" Margin="0,10,0,0" Minimum="0" Maximum="100"
+                                     Foreground="{StaticResource Accent}" Background="#2E2E36" BorderThickness="0"
+                                     Visibility="Collapsed"/>
+                        <TextBlock x:Name="DownloadStatus" Foreground="{StaticResource Sub}" FontSize="11" Margin="0,4,0,0"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
         <!-- Hotkey -->
         <Border Background="{StaticResource Panel}" CornerRadius="10" Padding="16" Margin="0,0,0,14">
             <StackPanel>

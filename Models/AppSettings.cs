@@ -33,9 +33,25 @@ public sealed class HotkeyCombo
     public bool IsSet => VirtualKey != 0;
 }
 
+/// <summary>Which transcription engine to use.</summary>
+public enum EngineMode
+{
+    /// <summary>Remote API (Groq Whisper).</summary>
+    Remote,
+    /// <summary>Local Parakeet model (offline).</summary>
+    Local
+}
+
 public sealed class AppSettings
 {
     public List<ApiProfile> Profiles { get; set; } = new();
+
+    /// <summary>Selected transcription engine.</summary>
+    public EngineMode Engine { get; set; } = EngineMode.Remote;
+
+    /// <summary>When Remote is selected but the request fails (e.g. offline),
+    /// transparently retry on the local model if it's installed.</summary>
+    public bool AutoFallbackToLocal { get; set; } = true;
 
     /// <summary>Toggle hotkey to start/stop recording. Defaults to Ctrl+Alt+Space.</summary>
     public HotkeyCombo ToggleHotkey { get; set; } = new()
