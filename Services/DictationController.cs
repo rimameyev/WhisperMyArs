@@ -19,6 +19,8 @@ public sealed class DictationController : IDisposable
     private readonly AudioRecorder _recorder = new();
     private readonly RemoteTranscriber _remote;
     private readonly LocalTranscriber _local = new();
+    private readonly ToastWindow _toast = new();
+    private bool _remoteWasOffline;
     private readonly OverlayWindow _overlay;
     private readonly Func<AppSettings> _settings;
     private readonly Action<string> _notify;
@@ -161,7 +163,15 @@ public sealed class DictationController : IDisposable
         var primary = ResolveTranscriber();
         try
         {
-            return await primary.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
+            var text = await primary.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
+
+            // Remote succeeded after a previous offline stretch — announce recovery.
+            if (primary == _remote && _remoteWasOffline)
+            {
+                _remoteWasOffline = false;
+                _toast.Show("Main model back online");
+            }
+            return text;
         }
         catch (Exception ex) when (ex is not OperationCanceledException
                                    && primary == _remote
@@ -169,6 +179,8 @@ public sealed class DictationController : IDisposable
                                    && _local.IsInstalled
                                    && !ct.IsCancellationRequested)
         {
+            _remoteWasOffline = true;
+            _toast.Show("Main model offline — switching to local");
             _overlay.ShowTranscribing("Offline — local model");
             return await _local.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
         }
