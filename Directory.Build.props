@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    Redirect build scratch (bin/obj) OUT of the Google Drive-synced source tree
+    so Drive doesn't constantly re-sync regenerated artifacts. Source stays in
+    Drive (backed up); builds go to a local-only folder.
+  -->
+  <PropertyGroup>
+    <BaseOutputPath>C:\Users\rimae\LocalBuilds\WhisperMyAss\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>C:\Users\rimae\LocalBuilds\WhisperMyAss\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

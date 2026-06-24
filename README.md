@@ -50,11 +50,16 @@ installing the app — so friends don't need to install anything by hand.
 ```
 # 1. Publish the small framework-dependent single-file app
 dotnet publish -c Release -r win-x64 --self-contained false \
-  -p:PublishSingleFile=true -o publish/app
+  -p:PublishSingleFile=true -o C:\Users\rimae\LocalBuilds\WhisperMyAss\publish\app
 
 # 2. Compile the installer (requires Inno Setup 6.1+)
 "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\WhisperMyAss.iss
 ```
 
-Output: `publish/WhisperMyAss-Setup.exe`. The runtime is only downloaded on
-machines that don't already have it (link: `aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe`).
+Output: `C:\Users\rimae\LocalBuilds\WhisperMyAss\publish\WhisperMyAss-Setup.exe`.
+The runtime is only downloaded on machines that don't already have it (link:
+`aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe`).
+
+> **Build output is redirected off Google Drive.** `Directory.Build.props` sends
+> `bin`/`obj` to `C:\Users\rimae\LocalBuilds\WhisperMyAss`, and the publish/installer
+> paths point there too, so regenerated artifacts don't churn the synced source folder.

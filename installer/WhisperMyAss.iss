@@ -7,8 +7,8 @@
 #define AppName "WhisperMyAss"
 #define AppVersion "0.1.0"
 #define AppExe "WhisperMyAss.exe"
-; Path to the published framework-dependent single-file exe.
-#define SrcExe "..\publish\app\WhisperMyAss.exe"
+; Path to the published framework-dependent single-file exe (local build dir, off Google Drive).
+#define SrcExe "C:\Users\rimae\LocalBuilds\WhisperMyAss\publish\app\WhisperMyAss.exe"
 ; Official MS link — always resolves to the latest 8.0 Desktop Runtime (x64).
 #define RuntimeUrl "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe"
 
@@ -21,7 +21,7 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UninstallDisplayName={#AppName}
-OutputDir=..\publish
+OutputDir=C:\Users\rimae\LocalBuilds\WhisperMyAss\publish
 OutputBaseFilename={#AppName}-Setup
 Compression=lzma2/max
 SolidCompression=yes
