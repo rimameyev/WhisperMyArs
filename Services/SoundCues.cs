@@ -4,19 +4,17 @@ using System.Media;
 namespace WhisperMyAss.Services;
 
 /// <summary>
-/// Synthesises two short, soft sine "blips" (a rising pair for start, a falling
-/// pair for stop) and plays them on the default output device. No asset files,
-/// so nothing to ship or load.
+/// Synthesises two soft "warm pop" cues (a short rising bubble for start, a
+/// falling one for stop) and plays them on the default output device. No asset
+/// files, so nothing to ship or load. Low amplitude with a smooth Hann
+/// envelope, so there's no hard click/attack.
 /// </summary>
 public static class SoundCues
 {
     private const int SampleRate = 44100;
 
-    private static readonly Lazy<MemoryStream> StartWav =
-        new(() => BuildBlip(new[] { (660.0, 0.10), (880.0, 0.12) }));
-
-    private static readonly Lazy<MemoryStream> StopWav =
-        new(() => BuildBlip(new[] { (880.0, 0.10), (660.0, 0.12) }));
+    private static readonly Lazy<MemoryStream> StartWav = new(() => BuildPop(330, 540));
+    private static readonly Lazy<MemoryStream> StopWav = new(() => BuildPop(540, 330));
 
     public static void PlayStart() => Play(StartWav.Value);
     public static void PlayStop() => Play(StopWav.Value);
@@ -26,33 +24,28 @@ public static class SoundCues
         try
         {
             wav.Position = 0;
-            // SoundPlayer copies/loads the stream synchronously, then plays async.
             using var player = new SoundPlayer(wav);
-            player.Play();
+            player.Play(); // async on the default device
         }
         catch { /* audio is non-critical */ }
     }
 
-    private static MemoryStream BuildBlip((double freq, double seconds)[] tones)
-    {
-        var samples = new List<short>();
-        foreach (var (freq, seconds) in tones)
-            AppendTone(samples, freq, seconds);
-
-        return WriteWav(samples);
-    }
-
-    private static void AppendTone(List<short> samples, double freq, double seconds)
+    /// <summary>A short sine that glides from <paramref name="f0"/> to
+    /// <paramref name="f1"/> Hz under a Hann window — a soft, rounded blip.</summary>
+    private static MemoryStream BuildPop(double f0, double f1, double seconds = 0.13, double amp = 0.24)
     {
         int n = (int)(SampleRate * seconds);
+        var samples = new List<short>(n);
         for (int i = 0; i < n; i++)
         {
             double t = i / (double)SampleRate;
-            // Short attack/release envelope to avoid clicks.
-            double env = Math.Min(1.0, Math.Min(i, n - i) / (SampleRate * 0.01));
-            double v = Math.Sin(2 * Math.PI * freq * t) * env * 0.25;
+            double frac = i / (double)n;
+            double freq = f0 + (f1 - f0) * frac;
+            double env = 0.5 - 0.5 * Math.Cos(2 * Math.PI * frac); // Hann
+            double v = Math.Sin(2 * Math.PI * freq * t) * env * amp;
             samples.Add((short)(v * short.MaxValue));
         }
+        return WriteWav(samples);
     }
 
     private static MemoryStream WriteWav(List<short> samples)
@@ -69,12 +62,12 @@ public static class SoundCues
         bw.Write(36 + dataBytes);
         bw.Write("WAVE".ToCharArray());
         bw.Write("fmt ".ToCharArray());
-        bw.Write(16);                 // fmt chunk size
-        bw.Write((short)1);           // PCM
+        bw.Write(16);
+        bw.Write((short)1);
         bw.Write(channels);
         bw.Write(SampleRate);
         bw.Write(byteRate);
-        bw.Write((short)(channels * bitsPerSample / 8)); // block align
+        bw.Write((short)(channels * bitsPerSample / 8));
         bw.Write(bitsPerSample);
         bw.Write("data".ToCharArray());
         bw.Write(dataBytes);
