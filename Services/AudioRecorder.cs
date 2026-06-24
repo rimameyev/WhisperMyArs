@@ -155,8 +155,9 @@ public sealed class AudioRecorder : IDisposable
 
         if (count == 0) return 0;
         double rms = Math.Sqrt(sum / count);
-        // Light shaping so quiet speech still moves the bars.
-        return (float)Math.Clamp(rms * 3.5, 0, 1);
+        // Perceptual curve: a sqrt mapping lifts quiet speech a lot more than a
+        // linear gain, so the bars stay lively at normal talking volume.
+        return (float)Math.Clamp(Math.Sqrt(rms) * 1.7, 0, 1);
     }
 
     public void Dispose() => Cancel();

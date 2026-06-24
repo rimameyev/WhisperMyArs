@@ -15,6 +15,9 @@ public partial class ToastWindow : Window
     {
         InitializeComponent();
         SourceInitialized += OnSourceInitialized;
+        // Re-centre once the window has actually sized to its content (ActualWidth
+        // isn't reliable at the moment Show() is called).
+        SizeChanged += (_, _) => PositionAbovePill();
     }
 
     /// <summary>Show a message for ~3 seconds. Safe to call from any thread.</summary>

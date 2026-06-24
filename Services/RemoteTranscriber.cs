@@ -5,6 +5,15 @@ using WhisperMyAss.Models;
 
 namespace WhisperMyAss.Services;
 
+/// <summary>The server responded with an error status (auth, rate limit, bad
+/// request, …) — as opposed to a connectivity failure. Distinguishing the two
+/// lets the controller treat "no network" differently from "server said no".</summary>
+public sealed class RemoteApiException : Exception
+{
+    public int StatusCode { get; }
+    public RemoteApiException(int statusCode, string message) : base(message) => StatusCode = statusCode;
+}
+
 /// <summary>
 /// Remote engine: uploads audio to an OpenAI-compatible audio/transcriptions
 /// endpoint (Groq Whisper by default) and returns the text. The active API
@@ -13,7 +22,13 @@ namespace WhisperMyAss.Services;
 /// </summary>
 public sealed class RemoteTranscriber : ITranscriber
 {
-    private static readonly HttpClient Http = new()
+    // ConnectTimeout caps connection setup so an offline machine fails fast
+    // (~3s) instead of hanging on the OS connect timeout. The overall Timeout
+    // still allows a slow transcription once connected.
+    private static readonly HttpClient Http = new(new SocketsHttpHandler
+    {
+        ConnectTimeout = TimeSpan.FromSeconds(3)
+    })
     {
         Timeout = TimeSpan.FromMinutes(2)
     };
@@ -21,6 +36,25 @@ public sealed class RemoteTranscriber : ITranscriber
     private readonly Func<ApiProfile?> _profile;
 
     public RemoteTranscriber(Func<ApiProfile?> profileProvider) => _profile = profileProvider;
+
+    /// <summary>Lightweight reachability check: any HTTP response (even an
+    /// error status) means the endpoint is reachable. Used by the background
+    /// reconnect probe.</summary>
+    public async Task<bool> ProbeAsync(CancellationToken ct)
+    {
+        var url = _profile()?.TranscriptionUrl;
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public async Task<string> TranscribeAsync(float[] samples, int sampleRate, CancellationToken ct)
     {
@@ -48,7 +82,7 @@ public sealed class RemoteTranscriber : ITranscriber
         var body = await resp.Content.ReadAsStringAsync(ct);
 
         if (!resp.IsSuccessStatusCode)
-            throw new HttpRequestException($"{(int)resp.StatusCode} {resp.ReasonPhrase}: {Trim(body)}");
+            throw new RemoteApiException((int)resp.StatusCode, $"{(int)resp.StatusCode} {resp.ReasonPhrase}: {Trim(body)}");
 
         return ExtractText(body);
     }

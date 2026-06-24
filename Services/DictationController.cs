@@ -3,6 +3,7 @@ using System.Windows;
 using WhisperMyAss.Models;
 using WhisperMyAss.UI;
 using Application = System.Windows.Application;
+using Timer = System.Threading.Timer;
 
 namespace WhisperMyAss.Services;
 
@@ -20,8 +21,15 @@ public sealed class DictationController : IDisposable
     private readonly RemoteTranscriber _remote;
     private readonly LocalTranscriber _local = new();
     private readonly ToastWindow _toast = new();
-    private bool _remoteWasOffline;
     private readonly OverlayWindow _overlay;
+
+    // Remote-offline state: once a connection failure is detected we stop
+    // hitting the API on every dictation (avoids the per-call delay and repeated
+    // messages) and instead probe it every 15 minutes in the background.
+    private volatile bool _remoteOffline;
+    private volatile bool _justRecovered;
+    private Timer? _probeTimer;
+    private static readonly TimeSpan ProbeInterval = TimeSpan.FromMinutes(15);
     private readonly Func<AppSettings> _settings;
     private readonly Action<string> _notify;
 
@@ -155,35 +163,70 @@ public sealed class DictationController : IDisposable
         }
     }
 
-    /// <summary>Runs the selected engine; if a remote request fails and
-    /// auto-fallback is on with the local model installed, transparently
-    /// retries offline (e.g. when there's no network).</summary>
+    /// <summary>Runs the selected engine with auto-fallback to local. Handles
+    /// the offline state machine: skip the API while known-offline, fall back to
+    /// local on a connection failure (once), and announce recovery.</summary>
     private async Task<string> TranscribeWithFallbackAsync(float[] samples, CancellationToken ct)
     {
+        int rate = AudioRecorder.OutputSampleRate;
+        bool canFallback = _settings().Engine == EngineMode.Remote
+                           && _settings().AutoFallbackToLocal
+                           && _local.IsInstalled;
+
+        // Known-offline: go straight to local, no API attempt, no repeated message.
+        if (canFallback && _remoteOffline)
+            return await _local.TranscribeAsync(samples, rate, ct);
+
         var primary = ResolveTranscriber();
         try
         {
-            var text = await primary.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
+            var text = await primary.TranscribeAsync(samples, rate, ct);
 
-            // Remote succeeded after a previous offline stretch — announce recovery.
-            if (primary == _remote && _remoteWasOffline)
+            // First success after the probe cleared the offline flag — announce it.
+            if (primary == _remote && _justRecovered)
             {
-                _remoteWasOffline = false;
+                _justRecovered = false;
                 _toast.Show("Main model back online");
             }
             return text;
         }
+        catch (RemoteApiException) when (canFallback && !ct.IsCancellationRequested)
+        {
+            // Server responded with an error (rate limit, auth, …) — not a
+            // connectivity problem, so fall back for this one without entering
+            // offline mode (next dictation retries the API).
+            return await _local.TranscribeAsync(samples, rate, ct);
+        }
         catch (Exception ex) when (ex is not OperationCanceledException
-                                   && primary == _remote
-                                   && _settings().AutoFallbackToLocal
-                                   && _local.IsInstalled
+                                   && canFallback
                                    && !ct.IsCancellationRequested)
         {
-            _remoteWasOffline = true;
+            // Connection failure → enter offline mode, notify once, start probe.
+            _remoteOffline = true;
             _toast.Show("Main model offline — switching to local");
-            _overlay.ShowTranscribing("Offline — local model");
-            return await _local.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
+            StartReconnectProbe();
+            return await _local.TranscribeAsync(samples, rate, ct);
         }
+    }
+
+    private void StartReconnectProbe()
+    {
+        _probeTimer ??= new Timer(_ => _ = ProbeOnceAsync(), null, ProbeInterval, ProbeInterval);
+    }
+
+    private async Task ProbeOnceAsync()
+    {
+        try
+        {
+            if (await _remote.ProbeAsync(CancellationToken.None))
+            {
+                _remoteOffline = false;
+                _justRecovered = true;     // next dictation will use the API + announce
+                _probeTimer?.Dispose();
+                _probeTimer = null;
+            }
+        }
+        catch { /* stay offline; try again next interval */ }
     }
 
     private void SetIdle()
@@ -207,6 +250,7 @@ public sealed class DictationController : IDisposable
     {
         _cts?.Cancel();
         _cts?.Dispose();
+        _probeTimer?.Dispose();
         _recorder.Dispose();
         _local.Dispose();
     }
