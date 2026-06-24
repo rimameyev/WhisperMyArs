@@ -39,3 +39,22 @@ bin/Release/net8.0-windows/WhisperMyAss.exe
 
 - URL: `https://api.groq.com/openai/v1/audio/transcriptions`
 - Model: `whisper-large-v3-turbo`
+
+## Building the shareable installer
+
+The app ships **framework-dependent** (the build is a single ~0.7 MB exe). The
+installer is a ~2 MB native `WhisperMyAss-Setup.exe` that checks for the .NET 8
+Desktop Runtime and, if it's missing, downloads and installs it before
+installing the app — so friends don't need to install anything by hand.
+
+```
+# 1. Publish the small framework-dependent single-file app
+dotnet publish -c Release -r win-x64 --self-contained false \
+  -p:PublishSingleFile=true -o publish/app
+
+# 2. Compile the installer (requires Inno Setup 6.1+)
+"%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\WhisperMyAss.iss
+```
+
+Output: `publish/WhisperMyAss-Setup.exe`. The runtime is only downloaded on
+machines that don't already have it (link: `aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe`).
