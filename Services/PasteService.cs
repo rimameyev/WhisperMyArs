@@ -5,21 +5,44 @@ using Clipboard = System.Windows.Clipboard;
 namespace WhisperMyAss.Services;
 
 /// <summary>
-/// Places text on the clipboard and emulates Ctrl+V into the focused control.
+/// Places text on the clipboard and emulates Ctrl+V into a target window.
+///
+/// Two subtleties this handles:
+///  * The clipboard is set on the calling (STA/UI) thread, but the actual key
+///    injection runs on a background thread so the UI thread stays free to
+///    service our low-level keyboard hook — otherwise the injected keystrokes
+///    can stall, since that hook is serviced on the UI thread.
+///  * We re-assert the target as foreground right before pasting so the keys
+///    land in the field the user was in when they started dictating.
 /// </summary>
 public static class PasteService
 {
-    public static void SetClipboardAndPaste(string text)
+    /// <param name="text">Text to paste.</param>
+    /// <param name="targetWindow">Foreground window captured when recording began.</param>
+    public static void SetClipboardAndPaste(string text, IntPtr targetWindow)
     {
         if (string.IsNullOrEmpty(text))
             return;
 
-        // Clipboard must be set on an STA thread; the app's UI thread is STA.
-        SetClipboardText(text);
+        SetClipboardText(text); // must be on the STA UI thread (the caller is)
 
-        // Small delay so the target app settles focus before we inject keys.
-        Thread.Sleep(60);
-        SendCtrlV();
+        // Inject off the UI thread so the keyboard hook can be serviced.
+        var thread = new Thread(() =>
+        {
+            if (targetWindow != IntPtr.Zero)
+            {
+                SetForegroundWindow(targetWindow);
+                Thread.Sleep(80); // let focus settle in the target
+            }
+            else
+            {
+                Thread.Sleep(60);
+            }
+            SendCtrlV();
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.IsBackground = true;
+        thread.Start();
     }
 
     private static void SetClipboardText(string text)
@@ -32,7 +55,7 @@ public static class PasteService
                 Clipboard.SetText(text);
                 return;
             }
-            catch (COMException)
+            catch (Exception)
             {
                 Thread.Sleep(40);
             }
@@ -41,13 +64,13 @@ public static class PasteService
 
     private static void SendCtrlV()
     {
-        var inputs = new INPUT[4];
-
-        inputs[0] = KeyDown(VK_CONTROL);
-        inputs[1] = KeyDown(VK_V);
-        inputs[2] = KeyUp(VK_V);
-        inputs[3] = KeyUp(VK_CONTROL);
-
+        var inputs = new[]
+        {
+            KeyDown(VK_CONTROL),
+            KeyDown(VK_V),
+            KeyUp(VK_V),
+            KeyUp(VK_CONTROL),
+        };
         SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
     }
 
@@ -56,25 +79,32 @@ public static class PasteService
     private const ushort VK_V = 0x56;
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
+    private const uint KEYEVENTF_SCANCODE = 0x0008;
+    private const uint MAPVK_VK_TO_VSC = 0;
 
-    private static INPUT KeyDown(ushort vk) => MakeKey(vk, 0);
-    private static INPUT KeyUp(ushort vk) => MakeKey(vk, KEYEVENTF_KEYUP);
+    private static INPUT KeyDown(ushort vk) => MakeKey(vk, false);
+    private static INPUT KeyUp(ushort vk) => MakeKey(vk, true);
 
-    private static INPUT MakeKey(ushort vk, uint flags) => new()
+    private static INPUT MakeKey(ushort vk, bool up)
     {
-        type = INPUT_KEYBOARD,
-        U = new InputUnion
+        ushort scan = (ushort)MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+        uint flags = KEYEVENTF_SCANCODE | (up ? KEYEVENTF_KEYUP : 0);
+        return new INPUT
         {
-            ki = new KEYBDINPUT
+            type = INPUT_KEYBOARD,
+            U = new InputUnion
             {
-                wVk = vk,
-                wScan = 0,
-                dwFlags = flags,
-                time = 0,
-                dwExtraInfo = IntPtr.Zero
+                ki = new KEYBDINPUT
+                {
+                    wVk = vk,
+                    wScan = scan,
+                    dwFlags = flags,
+                    time = 0,
+                    dwExtraInfo = IntPtr.Zero
+                }
             }
-        }
-    };
+        };
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct INPUT
@@ -101,4 +131,11 @@ public static class PasteService
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    [DllImport("user32.dll")]
+    private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 }

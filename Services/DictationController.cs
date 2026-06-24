@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using WhisperMyAss.Models;
 using WhisperMyAss.UI;
@@ -22,6 +23,9 @@ public sealed class DictationController : IDisposable
     private readonly Action<string> _notify;
 
     private CancellationTokenSource? _cts;
+
+    /// <summary>The window that had focus when recording started — where we paste.</summary>
+    private IntPtr _targetWindow;
 
     public DictationState State { get; private set; } = DictationState.Idle;
 
@@ -75,6 +79,9 @@ public sealed class DictationController : IDisposable
             return;
         }
 
+        // Remember where the caret is now — that's where we'll paste later.
+        _targetWindow = GetForegroundWindow();
+
         try
         {
             _recorder.Start();
@@ -110,7 +117,7 @@ public sealed class DictationController : IDisposable
         {
             string text = await _groq.TranscribeAsync(profile, wav, _cts.Token);
             if (!string.IsNullOrWhiteSpace(text))
-                PasteService.SetClipboardAndPaste(text);
+                PasteService.SetClipboardAndPaste(text, _targetWindow);
         }
         catch (OperationCanceledException)
         {
@@ -133,6 +140,9 @@ public sealed class DictationController : IDisposable
         State = DictationState.Idle;
         _overlay.HideOverlay();
     }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 
     private static void Dispatch(Action action)
     {

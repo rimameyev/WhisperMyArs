@@ -60,9 +60,15 @@ public sealed class HotkeyManager : IDisposable
             int msg = (int)wParam;
             if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
             {
-                int vk = Marshal.ReadInt32(lParam); // KBDLLHOOKSTRUCT.vkCode is first field
-                if (HandleKeyDown(vk))
-                    return 1; // swallow the key so it doesn't leak to the focused app
+                // KBDLLHOOKSTRUCT: vkCode @0, scanCode @4, flags @8.
+                int flags = Marshal.ReadInt32(lParam, 8);
+                bool injected = (flags & LLKHF_INJECTED) != 0;
+                if (!injected) // never react to our own emulated paste keystrokes
+                {
+                    int vk = Marshal.ReadInt32(lParam);
+                    if (HandleKeyDown(vk))
+                        return 1; // swallow the key so it doesn't leak to the focused app
+                }
             }
         }
         return CallNextHookEx(_kbHook, nCode, wParam, lParam);
@@ -142,6 +148,7 @@ public sealed class HotkeyManager : IDisposable
     private const int WM_KEYDOWN = 0x0100;
     private const int WM_SYSKEYDOWN = 0x0104;
     private const int WM_MBUTTONDOWN = 0x0207;
+    private const int LLKHF_INJECTED = 0x10;
 
     private const int VK_ESCAPE = 0x1B;
     private const int VK_SHIFT = 0x10;
