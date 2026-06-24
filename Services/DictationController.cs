@@ -145,7 +145,8 @@ public sealed class DictationController : IDisposable
         {
             string text = await TranscribeWithFallbackAsync(samples, _cts.Token);
             if (!string.IsNullOrWhiteSpace(text))
-                PasteService.SetClipboardAndPaste(text, _targetWindow);
+                // Trailing space so the next dictation doesn't run into this one.
+                PasteService.SetClipboardAndPaste(text + " ", _targetWindow);
         }
         catch (OperationCanceledException)
         {
