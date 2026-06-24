@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.IO;
 using System.Windows;
 using WhisperMyAss.Models;
 using WhisperMyAss.Services;
@@ -24,6 +25,19 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Never vanish silently: log unhandled exceptions and tell the user.
+        DispatcherUnhandledException += (_, ex) =>
+        {
+            LogCrash(ex.Exception);
+            MessageBox.Show($"WhisperMyAss hit an error:\n\n{ex.Exception.Message}\n\nDetails saved to crash.log.",
+                "WhisperMyAss", MessageBoxButton.OK, MessageBoxImage.Error);
+            ex.Handled = true; // keep the tray app alive
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, ex) =>
+        {
+            if (ex.ExceptionObject is Exception crash) LogCrash(crash);
+        };
 
         // Single instance — second launch just exits.
         _singleInstance = new Mutex(initiallyOwned: true, "WhisperMyAss.SingleInstance", out bool isNew);
@@ -95,6 +109,19 @@ public partial class App : Application
             _tray?.ShowBalloonTip(3000, "WhisperMyAss", message, System.Windows.Forms.ToolTipIcon.Info);
         else
             Dispatcher.Invoke(() => ShowBalloon(message));
+    }
+
+    private static void LogCrash(Exception ex)
+    {
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhisperMyAss");
+            Directory.CreateDirectory(dir);
+            File.AppendAllText(Path.Combine(dir, "crash.log"),
+                $"[{DateTime.Now:O}] {ex}\n\n");
+        }
+        catch { /* logging must never throw */ }
     }
 
     private void QuitApp()
