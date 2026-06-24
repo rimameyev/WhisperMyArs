@@ -189,7 +189,7 @@
 
         <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,10,0,0"
                    Foreground="{StaticResource Sub}" FontSize="11"
-                   Text="Toggle the hotkey to start/stop dictation. Press Esc to cancel. Transcribed text is pasted into the focused field."/>
+                   Text="Toggle the hotkey to start/stop dictation. Press Esc to cancel. Transcribed text is pasted into the focused field. WhisperMyAss keeps running in the system tray — closing this window does not quit it (use the tray menu to quit)."/>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="Close" Click="Close_Click" Margin="0,0,8,0"/>

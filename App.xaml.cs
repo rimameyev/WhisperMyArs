@@ -60,8 +60,20 @@ public partial class App : Application
 
         BuildTray();
 
-        if (_settings.ActiveProfile is null || string.IsNullOrWhiteSpace(_settings.ActiveProfile.ApiKey))
-            ShowBalloon("Add your Groq API key in Settings to get started.");
+        // Hide-to-tray applies only to the Windows boot launch, which passes
+        // "--tray" (see StartupManager). Any manual launch — the installer's
+        // "Launch now", Start Menu, or the desktop icon — opens Settings so the
+        // user sees the app is running and learns it lives in the tray.
+        bool launchedAtBoot = e.Args.Any(a => string.Equals(a, "--tray", StringComparison.OrdinalIgnoreCase));
+        if (launchedAtBoot)
+        {
+            if (_settings.ActiveProfile is null || string.IsNullOrWhiteSpace(_settings.ActiveProfile.ApiKey))
+                ShowBalloon("Add your Groq API key in Settings to get started.");
+        }
+        else
+        {
+            OpenSettings();
+        }
     }
 
     private void BuildTray()
