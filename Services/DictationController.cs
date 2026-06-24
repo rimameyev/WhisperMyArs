@@ -130,11 +130,10 @@ public sealed class DictationController : IDisposable
             return;
         }
 
-        var transcriber = ResolveTranscriber();
         _cts = new CancellationTokenSource();
         try
         {
-            string text = await transcriber.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, _cts.Token);
+            string text = await TranscribeWithFallbackAsync(samples, _cts.Token);
             if (!string.IsNullOrWhiteSpace(text))
                 PasteService.SetClipboardAndPaste(text, _targetWindow);
         }
@@ -151,6 +150,27 @@ public sealed class DictationController : IDisposable
             _cts?.Dispose();
             _cts = null;
             SetIdle();
+        }
+    }
+
+    /// <summary>Runs the selected engine; if a remote request fails and
+    /// auto-fallback is on with the local model installed, transparently
+    /// retries offline (e.g. when there's no network).</summary>
+    private async Task<string> TranscribeWithFallbackAsync(float[] samples, CancellationToken ct)
+    {
+        var primary = ResolveTranscriber();
+        try
+        {
+            return await primary.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException
+                                   && primary == _remote
+                                   && _settings().AutoFallbackToLocal
+                                   && _local.IsInstalled
+                                   && !ct.IsCancellationRequested)
+        {
+            _overlay.ShowTranscribing("Offline — local model");
+            return await _local.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, ct);
         }
     }
 

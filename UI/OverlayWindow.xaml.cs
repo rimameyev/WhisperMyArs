@@ -84,12 +84,13 @@ public partial class OverlayWindow : Window
         });
     }
 
-    public void ShowTranscribing()
+    public void ShowTranscribing(string label = "Transcribing…")
     {
         Dispatcher.Invoke(() =>
         {
             _animTimer.Stop();
             BarsPanel.Visibility = Visibility.Collapsed;
+            StatusText.Text = label;
             StatusText.Visibility = Visibility.Visible;
             StartPulse();
         });
