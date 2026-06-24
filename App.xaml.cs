@@ -66,7 +66,13 @@ public partial class App : Application
 
     private void BuildTray()
     {
-        var menu = new System.Windows.Forms.ContextMenuStrip();
+        var menu = new System.Windows.Forms.ContextMenuStrip
+        {
+            BackColor = Color.FromArgb(0x26, 0x26, 0x2C),
+            ForeColor = Color.FromArgb(0xED, 0xED, 0xF2),
+            RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional,
+            Renderer = new System.Windows.Forms.ToolStripProfessionalRenderer(new DarkMenuColors()) { RoundedEdges = false }
+        };
         menu.Items.Add("Settings…", null, (_, _) => OpenSettings());
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add("Quit", null, (_, _) => QuitApp());
@@ -141,6 +147,26 @@ public partial class App : Application
         _singleInstance?.Dispose();
         base.OnExit(e);
     }
+}
+
+/// <summary>Dark palette for the tray context menu.</summary>
+internal sealed class DarkMenuColors : System.Windows.Forms.ProfessionalColorTable
+{
+    private static readonly Color Bg = Color.FromArgb(0x26, 0x26, 0x2C);
+    private static readonly Color Hover = Color.FromArgb(0x3A, 0x3A, 0x44);
+    private static readonly Color Line = Color.FromArgb(0x3A, 0x3A, 0x44);
+
+    public override Color ToolStripDropDownBackground => Bg;
+    public override Color ImageMarginGradientBegin => Bg;
+    public override Color ImageMarginGradientMiddle => Bg;
+    public override Color ImageMarginGradientEnd => Bg;
+    public override Color MenuBorder => Line;
+    public override Color MenuItemBorder => Hover;
+    public override Color MenuItemSelected => Hover;
+    public override Color MenuItemSelectedGradientBegin => Hover;
+    public override Color MenuItemSelectedGradientEnd => Hover;
+    public override Color SeparatorDark => Line;
+    public override Color SeparatorLight => Line;
 }
 
 /// <summary>Builds a small tray icon at runtime (no .ico asset to ship).</summary>

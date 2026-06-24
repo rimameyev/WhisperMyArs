@@ -1,6 +1,8 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using WhisperMyAss.Models;
 using WhisperMyAss.Services;
 
@@ -8,6 +10,17 @@ namespace WhisperMyAss.UI;
 
 public partial class SettingsWindow : Window
 {
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
+    private void ApplyDarkTitleBar()
+    {
+        // DWMWA_USE_IMMERSIVE_DARK_MODE = 20 (Windows 10 2004+/11)
+        var hwnd = new WindowInteropHelper(this).Handle;
+        int on = 1;
+        DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int));
+    }
+
     private readonly HotkeyManager _hotkeys;
     private readonly Action<AppSettings> _onSave;
 
@@ -35,6 +48,8 @@ public partial class SettingsWindow : Window
 
         if (_profiles.Count > 0)
             ProfilesList.SelectedIndex = 0;
+
+        SourceInitialized += (_, _) => ApplyDarkTitleBar();
     }
 
     // ---------------- profiles ----------------
