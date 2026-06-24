@@ -6,28 +6,32 @@ using WhisperMyAss.Models;
 namespace WhisperMyAss.Services;
 
 /// <summary>
-/// Thin client over an OpenAI-compatible audio/transcriptions endpoint
-/// (Groq Whisper by default). One shared <see cref="HttpClient"/> for the
-/// process lifetime.
+/// Remote engine: uploads audio to an OpenAI-compatible audio/transcriptions
+/// endpoint (Groq Whisper by default) and returns the text. The active API
+/// profile is resolved lazily at call time so settings changes take effect
+/// without rebuilding the transcriber.
 /// </summary>
-public sealed class GroqClient
+public sealed class RemoteTranscriber : ITranscriber
 {
     private static readonly HttpClient Http = new()
     {
         Timeout = TimeSpan.FromMinutes(2)
     };
 
-    /// <summary>
-    /// Uploads a WAV and returns the transcribed text. Honours <paramref name="ct"/>
-    /// so an in-flight request can be cancelled (Esc).
-    /// </summary>
-    public async Task<string> TranscribeAsync(ApiProfile profile, byte[] wav, CancellationToken ct)
+    private readonly Func<ApiProfile?> _profile;
+
+    public RemoteTranscriber(Func<ApiProfile?> profileProvider) => _profile = profileProvider;
+
+    public async Task<string> TranscribeAsync(float[] samples, int sampleRate, CancellationToken ct)
     {
+        var profile = _profile()
+            ?? throw new InvalidOperationException("No active API profile.");
         if (string.IsNullOrWhiteSpace(profile.ApiKey))
             throw new InvalidOperationException("No API key set for the active profile.");
 
-        using var form = new MultipartFormDataContent();
+        var wav = WavEncoder.Encode(samples, sampleRate);
 
+        using var form = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(wav);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         form.Add(fileContent, "file", "audio.wav");
@@ -46,8 +50,6 @@ public sealed class GroqClient
         if (!resp.IsSuccessStatusCode)
             throw new HttpRequestException($"{(int)resp.StatusCode} {resp.ReasonPhrase}: {Trim(body)}");
 
-        // response_format=text returns the raw transcript; but if a server still
-        // hands back JSON, pull the "text" field out of it.
         return ExtractText(body);
     }
 

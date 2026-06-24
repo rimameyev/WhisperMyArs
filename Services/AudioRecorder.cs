@@ -54,9 +54,12 @@ public sealed class AudioRecorder : IDisposable
         LevelChanged?.Invoke(ComputeRms(e.Buffer, e.BytesRecorded, _captureFormat!));
     }
 
-    /// <summary>Stops capture and returns the recording as a 16 kHz mono WAV,
-    /// or null if nothing usable was captured.</summary>
-    public byte[]? Stop()
+    /// <summary>Sample rate of the audio returned by <see cref="Stop"/>.</summary>
+    public const int OutputSampleRate = 16000;
+
+    /// <summary>Stops capture and returns the recording as 16 kHz mono float
+    /// samples, or null if nothing usable was captured.</summary>
+    public float[]? Stop()
     {
         lock (_gate)
         {
@@ -76,7 +79,7 @@ public sealed class AudioRecorder : IDisposable
             if (rawBytes.Length == 0 || _captureFormat is null)
                 return null;
 
-            return ResampleToWhisperWav(rawBytes, _captureFormat);
+            return ResampleToMono16k(rawBytes, _captureFormat);
         }
     }
 
@@ -96,15 +99,28 @@ public sealed class AudioRecorder : IDisposable
         }
     }
 
-    private static byte[] ResampleToWhisperWav(byte[] rawBytes, WaveFormat sourceFormat)
+    private static float[] ResampleToMono16k(byte[] rawBytes, WaveFormat sourceFormat)
     {
-        var target = new WaveFormat(16000, 16, 1);
+        var target = new WaveFormat(OutputSampleRate, 16, 1);
         using var source = new RawSourceWaveStream(new MemoryStream(rawBytes), sourceFormat);
         using var resampler = new MediaFoundationResampler(source, target) { ResamplerQuality = 60 };
 
-        using var outStream = new MemoryStream();
-        WaveFileWriter.WriteWavFileToStream(outStream, resampler);
-        return outStream.ToArray();
+        // Read the resampled 16-bit PCM, then convert to normalised float[-1,1].
+        using var pcmStream = new MemoryStream();
+        var buf = new byte[8192];
+        int n;
+        while ((n = resampler.Read(buf, 0, buf.Length)) > 0)
+            pcmStream.Write(buf, 0, n);
+
+        var pcm = pcmStream.GetBuffer();
+        int count = (int)pcmStream.Length / 2;
+        var samples = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            short s = (short)(pcm[i * 2] | (pcm[i * 2 + 1] << 8));
+            samples[i] = s / 32768f;
+        }
+        return samples;
     }
 
     private static float ComputeRms(byte[] buffer, int bytes, WaveFormat fmt)

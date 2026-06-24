@@ -10,14 +10,14 @@ public enum DictationState { Idle, Recording, Transcribing }
 
 /// <summary>
 /// Owns the Idle → Recording → Transcribing → Idle lifecycle and coordinates
-/// the recorder, Groq client, overlay, sounds and paste. All public entry
-/// points marshal onto the WPF dispatcher so they're safe to call from the
-/// hotkey hook thread.
+/// the recorder, transcription engine, overlay, sounds and paste. All public
+/// entry points marshal onto the WPF dispatcher so they're safe to call from
+/// the hotkey hook thread.
 /// </summary>
 public sealed class DictationController : IDisposable
 {
     private readonly AudioRecorder _recorder = new();
-    private readonly GroqClient _groq = new();
+    private readonly ITranscriber _remote;
     private readonly OverlayWindow _overlay;
     private readonly Func<AppSettings> _settings;
     private readonly Action<string> _notify;
@@ -34,8 +34,13 @@ public sealed class DictationController : IDisposable
         _overlay = overlay;
         _settings = settings;
         _notify = notify;
+        _remote = new RemoteTranscriber(() => _settings().ActiveProfile);
         _recorder.LevelChanged += level => _overlay.SetLevel(level);
     }
+
+    /// <summary>Picks the engine for this dictation. Phase 1: always remote;
+    /// local + auto-fallback arrive in later phases.</summary>
+    private ITranscriber ResolveTranscriber() => _remote;
 
     /// <summary>Hotkey toggle: start if idle, finish if recording.</summary>
     public void Toggle()
@@ -103,19 +108,19 @@ public sealed class DictationController : IDisposable
         if (_settings().PlaySounds) SoundCues.PlayStop();
         _overlay.ShowTranscribing();
 
-        byte[]? wav = _recorder.Stop();
-        if (wav is null || wav.Length < 1024)
+        float[]? samples = _recorder.Stop();
+        if (samples is null || samples.Length < AudioRecorder.OutputSampleRate / 10) // < ~0.1s
         {
             _notify("Nothing recorded.");
             SetIdle();
             return;
         }
 
-        var profile = _settings().ActiveProfile!;
+        var transcriber = ResolveTranscriber();
         _cts = new CancellationTokenSource();
         try
         {
-            string text = await _groq.TranscribeAsync(profile, wav, _cts.Token);
+            string text = await transcriber.TranscribeAsync(samples, AudioRecorder.OutputSampleRate, _cts.Token);
             if (!string.IsNullOrWhiteSpace(text))
                 PasteService.SetClipboardAndPaste(text, _targetWindow);
         }
