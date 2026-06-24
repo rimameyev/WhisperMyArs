@@ -9,6 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>assets\whispermyass.ico</ApplicationIcon>
     <AssemblyName>WhisperMyAss</AssemblyName>
     <RootNamespace>WhisperMyAss</RootNamespace>
     <Version>0.1.0</Version>
@@ -22,6 +23,12 @@
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="assets\whispermyass.ico">
+      <LogicalName>app.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

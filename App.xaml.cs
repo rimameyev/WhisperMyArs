@@ -169,26 +169,16 @@ internal sealed class DarkMenuColors : System.Windows.Forms.ProfessionalColorTab
     public override Color SeparatorLight => Line;
 }
 
-/// <summary>Builds a small tray icon at runtime (no .ico asset to ship).</summary>
+/// <summary>Loads the app's embedded waveform icon for the tray.</summary>
 internal static class TrayIcon
 {
     public static Icon Create()
     {
-        using var bmp = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bmp))
-        {
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            g.Clear(Color.Transparent);
-            using var bg = new SolidBrush(Color.FromArgb(0x6E, 0x9B, 0xFF));
-            g.FillEllipse(bg, 2, 2, 28, 28);
-            using var pen = new Pen(Color.White, 3f);
-            // a simple little "waveform"
-            g.DrawLine(pen, 10, 16, 10, 16);
-            g.DrawLine(pen, 13, 11, 13, 21);
-            g.DrawLine(pen, 16, 8, 16, 24);
-            g.DrawLine(pen, 19, 11, 19, 21);
-            g.DrawLine(pen, 22, 14, 22, 18);
-        }
-        return Icon.FromHandle(bmp.GetHicon());
+        var asm = System.Reflection.Assembly.GetExecutingAssembly();
+        using var stream = asm.GetManifestResourceStream("app.ico");
+        // Pick the size Windows wants for the notification area.
+        return stream is not null
+            ? new Icon(stream, SystemInformation.SmallIconSize)
+            : SystemIcons.Application;
     }
 }
