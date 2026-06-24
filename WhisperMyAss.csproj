@@ -23,6 +23,10 @@
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <!-- Managed bindings only. The package bundles every platform's native libs
+         (~200MB); we exclude them and download the Windows natives at runtime
+         into %LOCALAPPDATA% so the base installer stays tiny. -->
+    <PackageReference Include="org.k2fsa.sherpa.onnx" Version="1.13.3" ExcludeAssets="native;build;buildTransitive" />
   </ItemGroup>
 
   <ItemGroup>
