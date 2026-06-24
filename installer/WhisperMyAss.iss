@@ -111,3 +111,23 @@ begin
     end;
   end;
 end;
+
+{ On uninstall: remove the autorun entry the app may have created, and offer to
+  delete the downloaded model + settings (which live in the user profile and are
+  not tracked by the installer's file list). }
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'WhisperMyAss');
+
+    if MsgBox('Also remove the downloaded offline model (~640 MB) and your settings (including saved API keys)?'
+              + #13#10 + #13#10
+              + 'Choose No to keep them for a future reinstall.',
+              mbConfirmation, MB_YESNO) = IDYES then
+    begin
+      DelTree(ExpandConstant('{localappdata}\WhisperMyAss'), True, True, True);
+      DelTree(ExpandConstant('{userappdata}\WhisperMyAss'), True, True, True);
+    end;
+  end;
+end;
