@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text.Json;
 using WhisperMyAss.Models;
 
@@ -37,22 +38,47 @@ public sealed class RemoteTranscriber : ITranscriber
 
     public RemoteTranscriber(Func<ApiProfile?> profileProvider) => _profile = profileProvider;
 
-    /// <summary>Lightweight reachability check: any HTTP response (even an
-    /// error status) means the endpoint is reachable. Used by the background
-    /// reconnect probe.</summary>
+    /// <summary>Lightweight reachability check (fresh TCP connect, hard 3s cap).
+    /// Used by the background reconnect probe.</summary>
     public async Task<bool> ProbeAsync(CancellationToken ct)
     {
         var url = _profile()?.TranscriptionUrl;
         if (string.IsNullOrWhiteSpace(url)) return false;
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, url);
-            using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            await EnsureReachableAsync(url, ct);
             return true;
         }
         catch
         {
             return false;
+        }
+    }
+
+    /// <summary>Fast fail-or-pass connectivity test: a brand-new TCP connection
+    /// to the endpoint host with a hard 3-second cap. Avoids the multi-second
+    /// hang of a stale pooled connection when the network has dropped. Throws
+    /// <see cref="HttpRequestException"/> if unreachable; honours <paramref name="ct"/>
+    /// (Esc) separately so a user cancel isn't mistaken for being offline.</summary>
+    private static async Task EnsureReachableAsync(string url, CancellationToken ct)
+    {
+        var uri = new Uri(url);
+        int port = uri.Port > 0 ? uri.Port : (uri.Scheme == Uri.UriSchemeHttps ? 443 : 80);
+
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+        using var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+        try
+        {
+            await socket.ConnectAsync(uri.Host, port, linked.Token);
+        }
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            throw new HttpRequestException("Endpoint unreachable (connection timed out).");
+        }
+        catch (SocketException ex)
+        {
+            throw new HttpRequestException("Endpoint unreachable.", ex);
         }
     }
 
@@ -62,6 +88,10 @@ public sealed class RemoteTranscriber : ITranscriber
             ?? throw new InvalidOperationException("No active API profile.");
         if (string.IsNullOrWhiteSpace(profile.ApiKey))
             throw new InvalidOperationException("No API key set for the active profile.");
+
+        // Fail fast (≤3s) if we can't even reach the host, rather than hanging on
+        // a stale connection. Throws HttpRequestException → controller falls back.
+        await EnsureReachableAsync(profile.TranscriptionUrl, ct);
 
         var wav = WavEncoder.Encode(samples, sampleRate);
 
