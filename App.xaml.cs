@@ -11,7 +11,11 @@ namespace WhisperMyAss;
 
 public partial class App : Application
 {
+    private const string ShowSettingsSignal = "WhisperMyAss.ShowSettings";
+
     private static Mutex? _singleInstance;
+    private EventWaitHandle? _showSettings;
+    private volatile bool _shuttingDown;
 
     private readonly SettingsStore _store = new();
     private AppSettings _settings = new();
@@ -39,13 +43,24 @@ public partial class App : Application
             if (ex.ExceptionObject is Exception crash) LogCrash(crash);
         };
 
-        // Single instance — second launch just exits.
+        // Single instance — a second launch tells the running instance to show
+        // Settings (so clicking the Start Menu/desktop icon surfaces the app),
+        // then exits.
         _singleInstance = new Mutex(initiallyOwned: true, "WhisperMyAss.SingleInstance", out bool isNew);
         if (!isNew)
         {
+            try
+            {
+                if (EventWaitHandle.TryOpenExisting(ShowSettingsSignal, out var ev))
+                    ev.Set();
+            }
+            catch { /* best effort */ }
             Shutdown();
             return;
         }
+
+        // Listen for "show settings" signals from later launches.
+        _showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSettingsSignal);
 
         _settings = _store.Load();
 
@@ -74,6 +89,29 @@ public partial class App : Application
         {
             OpenSettings();
         }
+
+        StartShowSettingsListener();
+    }
+
+    /// <summary>Background wait loop: a second launch sets the named event, and
+    /// we surface Settings on the UI thread.</summary>
+    private void StartShowSettingsListener()
+    {
+        if (_showSettings is null) return;
+        var thread = new Thread(() =>
+        {
+            while (_showSettings.WaitOne())
+            {
+                if (_shuttingDown) return;
+                try { Dispatcher.Invoke(OpenSettings); }
+                catch { /* app may be shutting down */ }
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "ShowSettingsListener"
+        };
+        thread.Start();
     }
 
     private void BuildTray()
@@ -96,7 +134,12 @@ public partial class App : Application
             Text = "WhisperMyAss",
             ContextMenuStrip = menu
         };
-        _tray.DoubleClick += (_, _) => OpenSettings();
+        // Left-click (or double-click) opens Settings; right-click shows the menu.
+        _tray.MouseClick += (_, args) =>
+        {
+            if (args.Button == System.Windows.Forms.MouseButtons.Left)
+                OpenSettings();
+        };
     }
 
     private void OpenSettings()
@@ -144,6 +187,7 @@ public partial class App : Application
 
     private void QuitApp()
     {
+        ReleaseListener();
         _tray?.Dispose();
         _hotkeys?.Dispose();
         _controller?.Dispose();
@@ -151,11 +195,20 @@ public partial class App : Application
         Shutdown();
     }
 
+    /// <summary>Wake the listener thread so it can exit instead of blocking.</summary>
+    private void ReleaseListener()
+    {
+        _shuttingDown = true;
+        try { _showSettings?.Set(); } catch { /* already disposed */ }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        ReleaseListener();
         _tray?.Dispose();
         _hotkeys?.Dispose();
         _controller?.Dispose();
+        _showSettings?.Dispose();
         _singleInstance?.Dispose();
         base.OnExit(e);
     }
