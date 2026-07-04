@@ -7,8 +7,17 @@
 #define AppName "WhisperMyArs"
 #define AppVersion "0.1.0"
 #define AppExe "WhisperMyArs.exe"
-; Path to the published framework-dependent single-file exe (local build dir, off Google Drive).
-#define SrcExe "C:\Users\rimae\LocalBuilds\WhisperMyArs\publish\app\WhisperMyArs.exe"
+; Optional WHISPERMYARS_BUILD_DIR env var redirects publish/output outside the
+; source tree (see Directory.Build.props); unset, everything is relative to
+; this installer folder, so a plain "dotnet publish -o ..\publish\app" +
+; ISCC just works for anyone who clones the repo.
+#define BuildDir GetEnv("WHISPERMYARS_BUILD_DIR")
+#if BuildDir == ""
+  #define PublishDir "..\publish"
+#else
+  #define PublishDir BuildDir + "\publish"
+#endif
+#define SrcExe PublishDir + "\app\" + AppExe
 ; Official MS link — always resolves to the latest 8.0 Desktop Runtime (x64).
 #define RuntimeUrl "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe"
 
@@ -21,7 +30,7 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UninstallDisplayName={#AppName}
-OutputDir=C:\Users\rimae\LocalBuilds\WhisperMyArs\publish
+OutputDir={#PublishDir}
 OutputBaseFilename={#AppName}-Setup
 Compression=lzma2/max
 SolidCompression=yes

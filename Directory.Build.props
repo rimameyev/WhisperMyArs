@@ -1,11 +1,14 @@
 <Project>
   <!--
-    Redirect build scratch (bin/obj) OUT of the Google Drive-synced source tree
-    so Drive doesn't constantly re-sync regenerated artifacts. Source stays in
-    Drive (backed up); builds go to a local-only folder.
+    Optionally redirects build scratch (bin/obj) to a folder outside the source
+    tree — useful if the repo lives in a cloud-synced folder (Google Drive,
+    OneDrive, Dropbox, …) that would otherwise constantly re-sync regenerated
+    artifacts. Set the WHISPERMYARS_BUILD_DIR environment variable to opt in
+    (e.g. C:\LocalBuilds\WhisperMyArs); unset, everyone just gets the normal
+    in-tree bin/obj (already gitignored).
   -->
-  <PropertyGroup>
-    <BaseOutputPath>C:\Users\rimae\LocalBuilds\WhisperMyArs\bin\</BaseOutputPath>
-    <BaseIntermediateOutputPath>C:\Users\rimae\LocalBuilds\WhisperMyArs\obj\</BaseIntermediateOutputPath>
+  <PropertyGroup Condition="'$(WHISPERMYARS_BUILD_DIR)' != ''">
+    <BaseOutputPath>$(WHISPERMYARS_BUILD_DIR)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(WHISPERMYARS_BUILD_DIR)\obj\</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>

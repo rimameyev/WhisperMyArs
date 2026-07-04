@@ -50,16 +50,32 @@ installing the app — so friends don't need to install anything by hand.
 ```
 # 1. Publish the small framework-dependent single-file app
 dotnet publish -c Release -r win-x64 --self-contained false \
-  -p:PublishSingleFile=true -o C:\Users\rimae\LocalBuilds\WhisperMyArs\publish\app
+  -p:PublishSingleFile=true -o publish\app
 
 # 2. Compile the installer (requires Inno Setup 6.1+)
 "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\WhisperMyArs.iss
 ```
 
-Output: `C:\Users\rimae\LocalBuilds\WhisperMyArs\publish\WhisperMyArs-Setup.exe`.
-The runtime is only downloaded on machines that don't already have it (link:
+Output: `publish\WhisperMyArs-Setup.exe`. The runtime is only downloaded on
+machines that don't already have it (link:
 `aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe`).
 
-> **Build output is redirected off Google Drive.** `Directory.Build.props` sends
-> `bin`/`obj` to `C:\Users\rimae\LocalBuilds\WhisperMyArs`, and the publish/installer
-> paths point there too, so regenerated artifacts don't churn the synced source folder.
+> **Optional: build outside the source tree.** If your clone lives in a
+> cloud-synced folder (Google Drive, OneDrive, Dropbox, …), constantly
+> regenerated `bin`/`obj`/`publish` output can cause needless re-syncing. Set
+> a `WHISPERMYARS_BUILD_DIR` environment variable (e.g.
+> `C:\LocalBuilds\WhisperMyArs`) before building and both `Directory.Build.props`
+> and the installer script redirect their output there instead. Leave it unset
+> and everything just builds in-tree (already gitignored).
+
+## API key security
+
+- Keys are encrypted at rest with **DPAPI** (`CurrentUser` scope) before being
+  written to `settings.json` — even someone with file access to your profile
+  can't read them without your Windows login.
+- The Settings UI uses a masked password field; keys are never printed to a
+  log, balloon, or the crash log (`crash.log` only ever contains exception
+  text, never request headers).
+- A key is only ever sent as the `Authorization: Bearer` header on your
+  configured `TranscriptionUrl`, and only at the moment you dictate — nowhere
+  else.
