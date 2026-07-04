@@ -9,7 +9,7 @@ using Rectangle = System.Windows.Shapes.Rectangle;
 using Color = System.Windows.Media.Color;
 using Point = System.Windows.Point;
 
-namespace WhisperMyAss.UI;
+namespace WhisperMyArs.UI;
 
 /// <summary>
 /// Small always-on-top status pill shown just above the taskbar. Two states:

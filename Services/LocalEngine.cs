@@ -2,12 +2,12 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Locations and native-library loading for the optional local Parakeet engine.
 /// The native ONNX runtime + sherpa libs and the model are downloaded (Phase 3)
-/// into %LOCALAPPDATA%\WhisperMyAss, keeping the base installer tiny. We point
+/// into %LOCALAPPDATA%\WhisperMyArs, keeping the base installer tiny. We point
 /// the sherpa-onnx managed bindings at those downloaded natives via a
 /// DllImport resolver.
 /// </summary>
@@ -16,7 +16,7 @@ public static class LocalEngine
     public const string ModelName = "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8";
 
     private static readonly string Root = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WhisperMyAss");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WhisperMyArs");
 
     public static string EngineDir => Path.Combine(Root, "engine");
     public static string ModelDir => Path.Combine(Root, "models", ModelName);

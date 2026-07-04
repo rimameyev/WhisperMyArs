@@ -2,19 +2,19 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using WhisperMyAss.Models;
+using WhisperMyArs.Models;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
-/// Loads/saves <see cref="AppSettings"/> as JSON under %APPDATA%\WhisperMyAss.
+/// Loads/saves <see cref="AppSettings"/> as JSON under %APPDATA%\WhisperMyArs.
 /// API keys are encrypted at rest with DPAPI (CurrentUser scope) so they are
 /// never written to disk in plaintext and are unreadable by other users.
 /// </summary>
 public sealed class SettingsStore
 {
     private static readonly string Dir =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhisperMyAss");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhisperMyArs");
 
     private static readonly string FilePath = Path.Combine(Dir, "settings.json");
 

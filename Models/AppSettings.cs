@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace WhisperMyAss.Models;
+namespace WhisperMyArs.Models;
 
 /// <summary>
 /// A single transcription endpoint the user can configure. Keys are stored

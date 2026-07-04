@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Toggles "run at sign-in" via the per-user Run key (no admin rights needed).
@@ -9,7 +9,7 @@ namespace WhisperMyAss.Services;
 public static class StartupManager
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "WhisperMyAss";
+    private const string ValueName = "WhisperMyArs";
 
     public static bool IsEnabled()
     {

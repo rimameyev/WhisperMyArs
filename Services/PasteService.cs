@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using Clipboard = System.Windows.Clipboard;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Places text on the clipboard and emulates Ctrl+V into a target window.

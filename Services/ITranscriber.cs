@@ -1,4 +1,4 @@
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// A speech-to-text engine. Implementations take 16 kHz mono float samples

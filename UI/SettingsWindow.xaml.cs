@@ -3,11 +3,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
-using WhisperMyAss.Models;
-using WhisperMyAss.Services;
+using WhisperMyArs.Models;
+using WhisperMyArs.Services;
 using MessageBox = System.Windows.MessageBox;
 
-namespace WhisperMyAss.UI;
+namespace WhisperMyArs.UI;
 
 public partial class SettingsWindow : Window
 {
@@ -132,7 +132,7 @@ public partial class SettingsWindow : Window
     private void RemoveModelBtn_Click(object sender, RoutedEventArgs e)
     {
         if (MessageBox.Show("Remove the downloaded offline model and engine?",
-                "WhisperMyAss", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                "WhisperMyArs", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
         try { _models.Remove(); }
         catch (Exception ex) { MessageBox.Show($"Could not remove: {ex.Message}"); }

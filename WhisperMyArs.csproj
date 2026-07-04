@@ -9,11 +9,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <ApplicationIcon>assets\whispermyass.ico</ApplicationIcon>
-    <AssemblyName>WhisperMyAss</AssemblyName>
-    <RootNamespace>WhisperMyAss</RootNamespace>
+    <ApplicationIcon>assets\whispermyars.ico</ApplicationIcon>
+    <AssemblyName>WhisperMyArs</AssemblyName>
+    <RootNamespace>WhisperMyArs</RootNamespace>
     <Version>0.1.0</Version>
-    <Product>WhisperMyAss</Product>
+    <Product>WhisperMyArs</Product>
     <!-- Keep the idle footprint lean -->
     <TieredCompilation>true</TieredCompilation>
     <TieredPGO>true</TieredPGO>
@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="assets\whispermyass.ico">
+    <EmbeddedResource Include="assets\whispermyars.ico">
       <LogicalName>app.ico</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

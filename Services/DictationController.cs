@@ -1,11 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Windows;
-using WhisperMyAss.Models;
-using WhisperMyAss.UI;
+using WhisperMyArs.Models;
+using WhisperMyArs.UI;
 using Application = System.Windows.Application;
 using Timer = System.Threading.Timer;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 public enum DictationState { Idle, Recording, Transcribing }
 

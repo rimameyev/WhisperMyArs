@@ -1,7 +1,7 @@
-<Window x:Class="WhisperMyAss.UI.SettingsWindow"
+<Window x:Class="WhisperMyArs.UI.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WhisperMyAss — Settings"
+        Title="WhisperMyArs — Settings"
         Width="500" Height="660" MinWidth="440" MinHeight="420"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
@@ -217,7 +217,7 @@
 
         <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,10,0,0"
                    Foreground="{StaticResource Sub}" FontSize="11"
-                   Text="Toggle the hotkey to start/stop dictation. Press Esc to cancel. Transcribed text is pasted into the focused field. WhisperMyAss keeps running in the system tray — closing this window does not quit it (use the tray menu to quit)."/>
+                   Text="Toggle the hotkey to start/stop dictation. Press Esc to cancel. Transcribed text is pasted into the focused field. WhisperMyArs keeps running in the system tray — closing this window does not quit it (use the tray menu to quit)."/>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="Close" Click="Close_Click" Margin="0,0,8,0"/>

@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
-using WhisperMyAss.Models;
+using WhisperMyArs.Models;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Installs low-level keyboard and mouse hooks so the toggle hotkey and the

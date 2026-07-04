@@ -3,7 +3,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using SharpCompress.Readers;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 public readonly record struct InstallProgress(string Stage, double Fraction);
 
@@ -11,7 +11,7 @@ public readonly record struct InstallProgress(string Stage, double Fraction);
 /// Downloads and installs the optional local engine: the native ONNX/sherpa
 /// libraries (from the version-matched NuGet runtime package, a zip) and the
 /// Parakeet model (a tar.bz2 from the sherpa-onnx model releases). Both land in
-/// %LOCALAPPDATA%\WhisperMyAss. Progress is reported with a fraction in [0,1],
+/// %LOCALAPPDATA%\WhisperMyArs. Progress is reported with a fraction in [0,1],
 /// or -1 for an indeterminate stage (extraction).
 /// </summary>
 public sealed class ModelManager

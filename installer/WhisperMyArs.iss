@@ -1,14 +1,14 @@
-; Inno Setup script for WhisperMyAss
-; Produces a single native WhisperMyAss-Setup.exe that:
+; Inno Setup script for WhisperMyArs
+; Produces a single native WhisperMyArs-Setup.exe that:
 ;   1. Checks for the .NET 8 Desktop Runtime.
 ;   2. If missing, downloads it (with a progress page) and installs it silently.
 ;   3. Installs the small framework-dependent app and creates shortcuts.
 
-#define AppName "WhisperMyAss"
+#define AppName "WhisperMyArs"
 #define AppVersion "0.1.0"
-#define AppExe "WhisperMyAss.exe"
+#define AppExe "WhisperMyArs.exe"
 ; Path to the published framework-dependent single-file exe (local build dir, off Google Drive).
-#define SrcExe "C:\Users\rimae\LocalBuilds\WhisperMyAss\publish\app\WhisperMyAss.exe"
+#define SrcExe "C:\Users\rimae\LocalBuilds\WhisperMyArs\publish\app\WhisperMyArs.exe"
 ; Official MS link — always resolves to the latest 8.0 Desktop Runtime (x64).
 #define RuntimeUrl "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe"
 
@@ -16,17 +16,17 @@
 AppId={{8B6C2F1A-9A2E-4C7D-9E4B-77D5C0A1F311}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppPublisher=WhisperMyAss
+AppPublisher=WhisperMyArs
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UninstallDisplayName={#AppName}
-OutputDir=C:\Users\rimae\LocalBuilds\WhisperMyAss\publish
+OutputDir=C:\Users\rimae\LocalBuilds\WhisperMyArs\publish
 OutputBaseFilename={#AppName}-Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=..\assets\whispermyass.ico
+SetupIconFile=..\assets\whispermyars.ico
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -119,15 +119,15 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then
   begin
-    RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'WhisperMyAss');
+    RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'WhisperMyArs');
 
     if MsgBox('Also remove the downloaded offline model (~640 MB) and your settings (including saved API keys)?'
               + #13#10 + #13#10
               + 'Choose No to keep them for a future reinstall.',
               mbConfirmation, MB_YESNO) = IDYES then
     begin
-      DelTree(ExpandConstant('{localappdata}\WhisperMyAss'), True, True, True);
-      DelTree(ExpandConstant('{userappdata}\WhisperMyAss'), True, True, True);
+      DelTree(ExpandConstant('{localappdata}\WhisperMyArs'), True, True, True);
+      DelTree(ExpandConstant('{userappdata}\WhisperMyArs'), True, True, True);
     end;
   end;
 end;

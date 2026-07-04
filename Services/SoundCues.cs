@@ -1,7 +1,7 @@
 using System.IO;
 using System.Media;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Synthesises two soft "warm pop" cues (a short rising bubble for start, a

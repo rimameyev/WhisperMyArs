@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Builds a 16-bit PCM mono WAV (in memory) from float samples — used by the

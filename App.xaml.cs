@@ -1,17 +1,17 @@
 using System.Drawing;
 using System.IO;
 using System.Windows;
-using WhisperMyAss.Models;
-using WhisperMyAss.Services;
-using WhisperMyAss.UI;
+using WhisperMyArs.Models;
+using WhisperMyArs.Services;
+using WhisperMyArs.UI;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 
-namespace WhisperMyAss;
+namespace WhisperMyArs;
 
 public partial class App : Application
 {
-    private const string ShowSettingsSignal = "WhisperMyAss.ShowSettings";
+    private const string ShowSettingsSignal = "WhisperMyArs.ShowSettings";
 
     private static Mutex? _singleInstance;
     private EventWaitHandle? _showSettings;
@@ -34,8 +34,8 @@ public partial class App : Application
         DispatcherUnhandledException += (_, ex) =>
         {
             LogCrash(ex.Exception);
-            MessageBox.Show($"WhisperMyAss hit an error:\n\n{ex.Exception.Message}\n\nDetails saved to crash.log.",
-                "WhisperMyAss", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"WhisperMyArs hit an error:\n\n{ex.Exception.Message}\n\nDetails saved to crash.log.",
+                "WhisperMyArs", MessageBoxButton.OK, MessageBoxImage.Error);
             ex.Handled = true; // keep the tray app alive
         };
         AppDomain.CurrentDomain.UnhandledException += (_, ex) =>
@@ -46,7 +46,7 @@ public partial class App : Application
         // Single instance — a second launch tells the running instance to show
         // Settings (so clicking the Start Menu/desktop icon surfaces the app),
         // then exits.
-        _singleInstance = new Mutex(initiallyOwned: true, "WhisperMyAss.SingleInstance", out bool isNew);
+        _singleInstance = new Mutex(initiallyOwned: true, "WhisperMyArs.SingleInstance", out bool isNew);
         if (!isNew)
         {
             try
@@ -131,7 +131,7 @@ public partial class App : Application
         {
             Icon = TrayIcon.Create(),
             Visible = true,
-            Text = "WhisperMyAss",
+            Text = "WhisperMyArs",
             ContextMenuStrip = menu
         };
         // Left-click (or double-click) opens Settings; right-click shows the menu.
@@ -167,7 +167,7 @@ public partial class App : Application
     private void ShowBalloon(string message)
     {
         if (Dispatcher.CheckAccess())
-            _tray?.ShowBalloonTip(3000, "WhisperMyAss", message, System.Windows.Forms.ToolTipIcon.Info);
+            _tray?.ShowBalloonTip(3000, "WhisperMyArs", message, System.Windows.Forms.ToolTipIcon.Info);
         else
             Dispatcher.Invoke(() => ShowBalloon(message));
     }
@@ -177,7 +177,7 @@ public partial class App : Application
         try
         {
             var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhisperMyAss");
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhisperMyArs");
             Directory.CreateDirectory(dir);
             File.AppendAllText(Path.Combine(dir, "crash.log"),
                 $"[{DateTime.Now:O}] {ex}\n\n");

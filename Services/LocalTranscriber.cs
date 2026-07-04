@@ -1,6 +1,6 @@
 using SherpaOnnx;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>
 /// Local engine: runs NVIDIA Parakeet-TDT v3 (int8) entirely offline on the CPU

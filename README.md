@@ -1,4 +1,4 @@
-# WhisperMyAss
+# WhisperMyArs
 
 A lightweight, tray-resident voice-dictation app for Windows 11. Toggle a
 hotkey, speak, and the transcribed text is pasted into whatever field has
@@ -20,7 +20,7 @@ endpoint (Groq by default).
 
 - **API profiles** — add one or more endpoints (name, API key, transcription
   URL, model). Exactly one is active at a time. Keys are stored
-  DPAPI-encrypted under `%APPDATA%\WhisperMyAss\settings.json` (never
+  DPAPI-encrypted under `%APPDATA%\WhisperMyArs\settings.json` (never
   plaintext).
 - **Activation** — capture a toggle hotkey; optionally enable the middle mouse
   button.
@@ -32,7 +32,7 @@ The app uses the default system microphone and speaker.
 
 ```
 dotnet build -c Release
-bin/Release/net8.0-windows/WhisperMyAss.exe
+bin/Release/net8.0-windows/WhisperMyArs.exe
 ```
 
 ### Default Groq profile values
@@ -43,23 +43,23 @@ bin/Release/net8.0-windows/WhisperMyAss.exe
 ## Building the shareable installer
 
 The app ships **framework-dependent** (the build is a single ~0.7 MB exe). The
-installer is a ~2 MB native `WhisperMyAss-Setup.exe` that checks for the .NET 8
+installer is a ~2 MB native `WhisperMyArs-Setup.exe` that checks for the .NET 8
 Desktop Runtime and, if it's missing, downloads and installs it before
 installing the app — so friends don't need to install anything by hand.
 
 ```
 # 1. Publish the small framework-dependent single-file app
 dotnet publish -c Release -r win-x64 --self-contained false \
-  -p:PublishSingleFile=true -o C:\Users\rimae\LocalBuilds\WhisperMyAss\publish\app
+  -p:PublishSingleFile=true -o C:\Users\rimae\LocalBuilds\WhisperMyArs\publish\app
 
 # 2. Compile the installer (requires Inno Setup 6.1+)
-"%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\WhisperMyAss.iss
+"%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\WhisperMyArs.iss
 ```
 
-Output: `C:\Users\rimae\LocalBuilds\WhisperMyAss\publish\WhisperMyAss-Setup.exe`.
+Output: `C:\Users\rimae\LocalBuilds\WhisperMyArs\publish\WhisperMyArs-Setup.exe`.
 The runtime is only downloaded on machines that don't already have it (link:
 `aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe`).
 
 > **Build output is redirected off Google Drive.** `Directory.Build.props` sends
-> `bin`/`obj` to `C:\Users\rimae\LocalBuilds\WhisperMyAss`, and the publish/installer
+> `bin`/`obj` to `C:\Users\rimae\LocalBuilds\WhisperMyArs`, and the publish/installer
 > paths point there too, so regenerated artifacts don't churn the synced source folder.

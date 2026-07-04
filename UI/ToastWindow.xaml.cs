@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media.Animation;
 
-namespace WhisperMyAss.UI;
+namespace WhisperMyArs.UI;
 
 /// <summary>
 /// A small, click-through "toast" that fades in just above the dictation pill,

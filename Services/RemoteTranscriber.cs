@@ -2,9 +2,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text.Json;
-using WhisperMyAss.Models;
+using WhisperMyArs.Models;
 
-namespace WhisperMyAss.Services;
+namespace WhisperMyArs.Services;
 
 /// <summary>The server responded with an error status (auth, rate limit, bad
 /// request, …) — as opposed to a connectivity failure. Distinguishing the two
