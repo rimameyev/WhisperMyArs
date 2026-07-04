@@ -1,9 +1,11 @@
 # WhisperMyArs
 
 A lightweight, tray-resident voice-dictation app for Windows 11. Toggle a
-hotkey, speak, and the transcribed text is pasted into whatever field has
-focus. No local models — audio is sent to an OpenAI-compatible Whisper
-endpoint (Groq by default).
+keyboard hotkey or mouse button, speak, toggle again, and the transcribed
+text is pasted into whatever field has focus (and left on the clipboard).
+You can also install the optional NVIDIA Parakeet v3 local model and use it
+as a fallback when you're offline, or as a fully local transcription
+solution.
 
 ## How it works
 
