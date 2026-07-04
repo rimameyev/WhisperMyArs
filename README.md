@@ -21,7 +21,9 @@ endpoint (Groq by default).
 - **API profiles** — add one or more endpoints (name, API key, transcription
   URL, model). Exactly one is active at a time. Keys are stored
   DPAPI-encrypted under `%APPDATA%\WhisperMyArs\settings.json` (never
-  plaintext).
+  plaintext). Any OpenAI-compatible `audio/transcriptions` endpoint works —
+  [Groq](https://groq.com) is a good example of a very fast, inexpensive
+  Whisper-class API with generous free personal-use limits.
 - **Activation** — capture a toggle hotkey; optionally enable the middle mouse
   button.
 - **General** — run on Windows startup (hidden to tray); start/stop sounds.
